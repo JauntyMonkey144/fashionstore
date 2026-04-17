@@ -20,20 +20,20 @@ public class SecurityConfig {
     }
 
     // ==============================================================
-    // 1. CẤU HÌNH BẢO MẬT CHO ADMIN (Két sắt số 1)
+    // 1. CẤU HÌNH BẢO MẬT CHO ADMIN
     // ==============================================================
     @Bean
     @Order(1) 
     public SecurityFilterChain adminFilterChain(HttpSecurity http) throws Exception {
-        // TẠO KHO LƯU TRỮ PHIÊN ĐĂNG NHẬP ĐỘC LẬP CHO ADMIN
         HttpSessionSecurityContextRepository adminContextRepo = new HttpSessionSecurityContextRepository();
         adminContextRepo.setSpringSecurityContextKey("ADMIN_SECURITY_CONTEXT");
 
         http
             .securityMatcher("/admin/**") 
-            // Gắn két sắt số 1 vào chuỗi bảo mật của Admin
             .securityContext(context -> context.securityContextRepository(adminContextRepo))
             .csrf(csrf -> csrf.disable())
+            // Hỗ trợ HTTPS trên Railway
+            .requiresChannel(channel -> channel.anyRequest().requiresSecure())
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/admin/login").permitAll()
                 .requestMatchers("/admin/**").hasAuthority("ROLE_ADMIN")
@@ -48,6 +48,8 @@ public class SecurityConfig {
             .logout(logout -> logout
                 .logoutUrl("/admin/logout")             
                 .logoutSuccessUrl("/admin/login?logout=true") 
+                .invalidateHttpSession(true)
+                .deleteCookies("JSESSIONID")
                 .permitAll()
             );
 
@@ -55,21 +57,22 @@ public class SecurityConfig {
     }
 
     // ==============================================================
-    // 2. CẤU HÌNH BẢO MẬT CHO KHÁCH HÀNG (Két sắt số 2)
+    // 2. CẤU HÌNH BẢO MẬT CHO KHÁCH HÀNG
     // ==============================================================
     @Bean
     @Order(2) 
     public SecurityFilterChain userFilterChain(HttpSecurity http) throws Exception {
-        // TẠO KHO LƯU TRỮ PHIÊN ĐĂNG NHẬP ĐỘC LẬP CHO USER
         HttpSessionSecurityContextRepository userContextRepo = new HttpSessionSecurityContextRepository();
         userContextRepo.setSpringSecurityContextKey("USER_SECURITY_CONTEXT");
 
         http
-            // Gắn két sắt số 2 vào chuỗi bảo mật của Khách hàng
             .securityContext(context -> context.securityContextRepository(userContextRepo))
             .csrf(csrf -> csrf.disable())
+            // Ép buộc dùng HTTPS để tránh lỗi 403 do Proxy
+            .requiresChannel(channel -> channel.anyRequest().requiresSecure())
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/profile/**", "/checkout/**").hasAuthority("ROLE_USER") // Chỉ USER mới được vào
+                // Thay hasAuthority thành authenticated() để tránh lỗi Role chưa kịp cập nhật từ Google
+                .requestMatchers("/profile/**", "/checkout/**").authenticated() 
                 .anyRequest().permitAll() 
             )
             .formLogin(form -> form
@@ -87,6 +90,8 @@ public class SecurityConfig {
             .logout(logout -> logout
                 .logoutUrl("/logout")
                 .logoutSuccessUrl("/home")
+                .invalidateHttpSession(true)
+                .deleteCookies("JSESSIONID")
                 .permitAll()
             );
 
