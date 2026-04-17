@@ -131,14 +131,26 @@ public class AdminController {
         try {
             if (imageFile != null && !imageFile.isEmpty()) {
                 String fileName = imageFile.getOriginalFilename();
-                Path path = Paths.get("src/main/resources/static/images/" + fileName);
-                Files.copy(imageFile.getInputStream(), path, StandardCopyOption.REPLACE_EXISTING);
+
+                // XÁC ĐỊNH ĐƯỜNG DẪN LƯU FILE LINH HOẠT
+                String uploadDir = System.getProperty("os.name").toLowerCase().contains("win")
+                        ? System.getProperty("user.dir") + "/src/main/resources/static/images/"
+                        : "/app/static/"; // Đường dẫn Volume trên Railway
+
+                Path uploadPath = Paths.get(uploadDir);
+                if (!Files.exists(uploadPath)) {
+                    Files.createDirectories(uploadPath);
+                }
+
+                Path filePath = uploadPath.resolve(fileName);
+                Files.copy(imageFile.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
+
                 product.setImage(fileName);
             }
             productService.save(product);
             ra.addFlashAttribute("message", "Dữ liệu sản phẩm đã được cập nhật!");
         } catch (Exception e) {
-            ra.addFlashAttribute("error", "Lỗi: " + e.getMessage());
+            ra.addFlashAttribute("error", "Lỗi lưu file: " + e.getMessage());
         }
         return "redirect:/admin/category";
     }
@@ -155,23 +167,26 @@ public class AdminController {
         return "redirect:/admin/category";
     }
 
-@GetMapping("/product/delete/{id}")
+    @GetMapping("/product/delete/{id}")
     public String deleteProduct(@PathVariable("id") Long id, RedirectAttributes ra) {
         Product product = productService.getById(id);
         if (product != null) {
             try {
-                // Thử xóa sản phẩm
+                // Xóa trong Database trước
                 productService.delete(id);
-                
-                // Nếu xóa Database thành công thì mới xóa ảnh vật lý
+
+                // Nếu thành công thì mới xóa file vật lý
                 if (product.getImage() != null) {
-                    Path path = Paths.get("src/main/resources/static/images/" + product.getImage());
+                    String uploadDir = System.getProperty("os.name").toLowerCase().contains("win")
+                            ? System.getProperty("user.dir") + "/src/main/resources/static/images/"
+                            : "/app/static/";
+
+                    Path path = Paths.get(uploadDir + product.getImage());
                     Files.deleteIfExists(path);
                 }
                 ra.addFlashAttribute("message", "Đã xóa sản phẩm thành công!");
             } catch (Exception e) {
-                // Bẫy lỗi 500 do khóa ngoại (Sản phẩm đã nằm trong đơn hàng)
-                ra.addFlashAttribute("error", "Không thể xóa! Sản phẩm này đã tồn tại trong lịch sử đơn hàng. Hãy chuyển trạng thái thành 'Cũ' thay vì xóa.");
+                ra.addFlashAttribute("error", "Không thể xóa! Sản phẩm này đã tồn tại trong lịch sử đơn hàng.");
             }
         }
         return "redirect:/admin/category";

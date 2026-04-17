@@ -133,18 +133,31 @@ public class UserController {
         return "redirect:/profile";
     }
 
-    // Xử lý Cập nhật riêng Avatar
     @PostMapping("/profile/update-avatar")
     public String updateProfileAvatar(@RequestParam("avatarFile") MultipartFile avatarFile, Principal principal, RedirectAttributes ra) {
         try {
             User existingUser = userService.findByEmail(getEmailFromPrincipal(principal));
 
             if (avatarFile != null && !avatarFile.isEmpty()) {
+                // Tạo tên file duy nhất để tránh trùng lặp
                 String fileName = "avatar_" + System.currentTimeMillis() + "_" + avatarFile.getOriginalFilename();
-                Path path = Paths.get("src/main/resources/static/images/avatars/" + fileName);
-                Files.createDirectories(path.getParent());
-                Files.copy(avatarFile.getInputStream(), path, StandardCopyOption.REPLACE_EXISTING);
 
+                // XÁC ĐỊNH ĐƯỜNG DẪN DỰA TRÊN MÔI TRƯỜNG
+                String uploadDir = System.getProperty("os.name").toLowerCase().contains("win")
+                        ? System.getProperty("user.dir") + "/src/main/resources/static/images/avatars/"
+                        : "/app/static/avatars/"; // Trên Railway sẽ lưu vào thư mục avatars trong Volume
+
+                Path uploadPath = Paths.get(uploadDir);
+
+                // Tự động tạo thư mục nếu chưa tồn tại
+                if (!Files.exists(uploadPath)) {
+                    Files.createDirectories(uploadPath);
+                }
+
+                Path filePath = uploadPath.resolve(fileName);
+                Files.copy(avatarFile.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
+
+                // Lưu tên file vào database (Lưu ý: Chỉ lưu fileName, không lưu đường dẫn tuyệt đối)
                 existingUser.setAvatar(fileName);
                 userService.save(existingUser);
                 ra.addFlashAttribute("message", "Cập nhật ảnh đại diện thành công!");
