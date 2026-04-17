@@ -12,12 +12,18 @@ public class WebConfig implements WebMvcConfigurer {
 
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
-        // Lấy đường dẫn tuyệt đối của thư mục src/main/resources/static/images trên hệ thống
-        Path imageDir = Paths.get("src/main/resources/static/images");
-        String imagePath = imageDir.toFile().getAbsolutePath();
+        // Kiểm tra xem đang chạy trên Railway hay Local
+        // Railway sẽ dùng đường dẫn tuyệt đối của Volume
+        String location;
+        if (System.getProperty("os.name").toLowerCase().contains("win")) {
+            // Nếu là Windows (Local), trỏ về thư mục máy bạn
+            location = "file:" + System.getProperty("user.dir") + "/src/main/resources/static/images/";
+        } else {
+            // Nếu là Linux (Railway), trỏ thẳng vào Mount Path của Volume
+            location = "file:/app/static/";
+        }
 
-        // Sử dụng "file:" để ép Spring Boot đọc ảnh trực tiếp từ thư mục gốc, bỏ qua thư mục target
         registry.addResourceHandler("/images/**")
-                .addResourceLocations("file:" + imagePath + "/");
+                .addResourceLocations(location);
     }
 }
