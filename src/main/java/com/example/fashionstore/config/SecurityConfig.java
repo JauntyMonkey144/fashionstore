@@ -19,9 +19,6 @@ public class SecurityConfig {
         return new BCryptPasswordEncoder();
     }
 
-    // ==============================================================
-    // 1. CẤU HÌNH BẢO MẬT CHO ADMIN
-    // ==============================================================
     @Bean
     @Order(1) 
     public SecurityFilterChain adminFilterChain(HttpSecurity http) throws Exception {
@@ -32,33 +29,25 @@ public class SecurityConfig {
             .securityMatcher("/admin/**") 
             .securityContext(context -> context.securityContextRepository(adminContextRepo))
             .csrf(csrf -> csrf.disable())
-            // Hỗ trợ HTTPS trên Railway
-            .requiresChannel(channel -> channel.anyRequest().requiresSecure())
+            // XÓA DÒNG requiresChannel Ở ĐÂY
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/admin/login").permitAll()
                 .requestMatchers("/admin/**").hasAuthority("ROLE_ADMIN")
             )
             .formLogin(form -> form
                 .loginPage("/admin/login")              
-                .loginProcessingUrl("/admin/login")     
                 .defaultSuccessUrl("/admin/home", true) 
-                .failureUrl("/admin/login?error=true")  
                 .permitAll()
             )
             .logout(logout -> logout
                 .logoutUrl("/admin/logout")             
                 .logoutSuccessUrl("/admin/login?logout=true") 
-                .invalidateHttpSession(true)
-                .deleteCookies("JSESSIONID")
                 .permitAll()
             );
 
         return http.build();
     }
 
-    // ==============================================================
-    // 2. CẤU HÌNH BẢO MẬT CHO KHÁCH HÀNG
-    // ==============================================================
     @Bean
     @Order(2) 
     public SecurityFilterChain userFilterChain(HttpSecurity http) throws Exception {
@@ -68,19 +57,14 @@ public class SecurityConfig {
         http
             .securityContext(context -> context.securityContextRepository(userContextRepo))
             .csrf(csrf -> csrf.disable())
-            // Ép buộc dùng HTTPS để tránh lỗi 403 do Proxy
-            .requiresChannel(channel -> channel.anyRequest().requiresSecure())
+            // XÓA DÒNG requiresChannel Ở ĐÂY
             .authorizeHttpRequests(auth -> auth
-                // Thay hasAuthority thành authenticated() để tránh lỗi Role chưa kịp cập nhật từ Google
                 .requestMatchers("/profile/**", "/checkout/**").authenticated() 
                 .anyRequest().permitAll() 
             )
             .formLogin(form -> form
                 .loginPage("/login")
-                .usernameParameter("username")
-                .passwordParameter("password")
                 .defaultSuccessUrl("/home", true)
-                .failureUrl("/login?error")
                 .permitAll()
             )
             .oauth2Login(oauth2 -> oauth2
@@ -90,8 +74,6 @@ public class SecurityConfig {
             .logout(logout -> logout
                 .logoutUrl("/logout")
                 .logoutSuccessUrl("/home")
-                .invalidateHttpSession(true)
-                .deleteCookies("JSESSIONID")
                 .permitAll()
             );
 
