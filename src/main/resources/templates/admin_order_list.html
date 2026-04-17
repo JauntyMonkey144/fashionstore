@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{admin_layout :: layout}">
+<section>
+  <div style="background-color: #edf7e9; padding: 20px 30px; min-height: 100vh;">
+    <div style="max-width: 90%; margin: 0 auto;">
+      <!-- Header -->
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+        <h1 style="font-weight: 700; color: #1f4f2b; border-left: 6px solid #4caf50; padding-left: 18px;">
+           Quản lý đơn hàng
+        </h1>
+        <!-- Form tìm kiếm -->
+        <form method="get" style="display: flex; gap: 10px;">
+          <input type="text" name="keyword" class="form-control"
+                 placeholder="Mã đơn hàng / Tên khách hàng..."
+                 th:value="${keyword}" style="border-radius: 40px; padding: 8px 20px;">
+          <button type="submit" style="border-radius: 40px; padding: 8px 24px; background: #4caf50; color: white; border: none;">Tìm</button>
+        </form>
+      </div>
+
+      <!-- Bảng danh sách đơn hàng -->
+      <div style="background: white; border-radius: 24px; overflow: hidden; box-shadow: 0 20px 40px rgba(0,0,0,0.08);">
+        <table style="width: 100%; border-collapse: collapse;">
+          <thead style="background: linear-gradient(135deg, #eaf5e6 0%, #4caf50 100%);">
+          <tr>
+            <th style="padding: 15px; text-align: left;">Mã đơn hàng</th>
+            <th style="padding: 15px; text-align: left;">Khách hàng</th>
+            <th style="padding: 15px; text-align: left;">Ngày đặt</th>
+            <th style="padding: 15px; text-align: right;">Tổng tiền</th>
+            <th style="padding: 15px; text-align: center;">Trạng thái</th>
+            <th style="padding: 15px; text-align: center;">Thao tác</th>
+          </tr>
+          </thead>
+          <tbody>
+          <tr th:if="${#lists.isEmpty(orders)}">
+            <td colspan="6" style="text-align: center; padding: 40px;">Không có đơn hàng nào</td>
+          </tr>
+          <tr th:each="o : ${orders}" style="border-bottom: 1px solid #eee;">
+            <td style="padding: 15px;" th:text="${o.orderCode}">OD001</td>
+            <td style="padding: 15px;" th:text="${o.customerName}">Khách A</td>
+            <td style="padding: 15px;" th:text="${#temporals.format(o.orderDate, 'dd/MM/yyyy HH:mm')}">-</td>
+            <td style="padding: 15px; text-align: right; font-weight: bold; color: #4caf50;"
+                th:text="${#numbers.formatDecimal(o.totalAmount, 0, 'COMMA', 0, 'POINT')} + 'đ'">0đ</td>
+            <td style="padding: 15px; text-align: center;">
+              <span th:if="${o.status == 'Đang xử lý'}" style="background: #fff3cd; color: #856404; padding: 4px 12px; border-radius: 20px;">⚡ Đang xử lý</span>
+              <span th:if="${o.status == 'Đã giao hàng'}" style="background: #d4edda; color: #155724; padding: 4px 12px; border-radius: 20px;">✅ Đã giao</span>
+              <span th:if="${o.status == 'Đã hủy'}" style="background: #f8d7da; color: #721c24; padding: 4px 12px; border-radius: 20px;">❌ Đã hủy</span>
+            </td>
+            <td style="padding: 15px; text-align: center;">
+              <a th:href="@{/admin/orders/detail/{id}(id=${o.id})}"
+                 style="background: #4caf50; color: white; padding: 5px 15px; border-radius: 20px; text-decoration: none;">Chi tiết</a>
+            </td>
+          </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Form cập nhật trạng thái (nếu cần) -->
+      <div style="margin-top: 20px; text-align: right;">
+        <span>Tổng số đơn hàng: <strong th:text="${#lists.size(orders)}">0</strong></span>
+      </div>
+    </div>
+  </div>
+</section>
+</html>
